@@ -23,6 +23,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor // Automatically injects UserDetailsServiceImpl
 public class SpringSecurity {
 
+    private final JwtFilter jwtFilter;
     private final UserDetailsServiceImpl userDetailsService;
 
     @Bean
@@ -31,19 +32,21 @@ public class SpringSecurity {
                 .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for APIs
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // Registration/Login public
-                        .requestMatchers(HttpMethod.GET, "/api/v1/accounts/**").hasAuthority("USER")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/accounts/**").hasAuthority("USER")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/customers/**").hasAuthority("USER")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/customers/**").hasAuthority("USER")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/transactions/**").hasAuthority("USER")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/transactions/**").hasAuthority("USER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/accounts/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/accounts/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/customers/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/customers/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/transactions/**").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/transactions/**").hasRole("USER")
+                        .requestMatchers("/error").permitAll() // ADD THIS LINE
                         .anyRequest().authenticated() // "Secure by default"
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // No sessions/cookies
                 )
                 .authenticationProvider(authenticationProvider()) // Tell Spring to use your DB
-                .httpBasic(Customizer.withDefaults());
+                // Tells Spring to check our JWT filter before the standard login filter
+                .addFilterBefore(jwtFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

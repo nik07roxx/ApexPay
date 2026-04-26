@@ -5,6 +5,7 @@ import com.nik07roxx.apexPay.DTO.Account.AccountCreationRequest;
 import com.nik07roxx.apexPay.DTO.Account.AccountResponse;
 import com.nik07roxx.apexPay.DTO.Account.AccountUpdationRequest;
 import com.nik07roxx.apexPay.Service.AccountService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +18,7 @@ public class AccountController {
     private final AccountService accountService;
 
     @PostMapping
-    public ResponseEntity<AccountResponse> createAccount(@RequestBody AccountCreationRequest accountCreationRequest)
+    public ResponseEntity<AccountResponse> createAccount(@Valid @RequestBody AccountCreationRequest accountCreationRequest)
     {
         return new ResponseEntity<>(accountService.createAccount(accountCreationRequest),
                 HttpStatus.CREATED);
@@ -50,7 +51,7 @@ public class AccountController {
 
     @PatchMapping("/{accountNumber}")
     public ResponseEntity<AccountResponse> updateAccount(@PathVariable String accountNumber,
-                                                         @RequestBody AccountUpdationRequest accountUpdationRequest)
+                                                         @Valid @RequestBody AccountUpdationRequest accountUpdationRequest)
     {
         return ResponseEntity.ok(accountService.updateAccount(accountNumber, accountUpdationRequest));
     }

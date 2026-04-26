@@ -3,6 +3,7 @@ package com.nik07roxx.apexPay.Controller;
 import com.nik07roxx.apexPay.DTO.Customer.CustomerCreationRequest;
 import com.nik07roxx.apexPay.DTO.Customer.CustomerResponse;
 import com.nik07roxx.apexPay.Service.CustomerService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/customers")
+    @RequestMapping("/api/v1/customers")
 public class CustomerController {
 
     private CustomerService customerService;
@@ -24,7 +25,7 @@ public class CustomerController {
     }
 
     @PostMapping
-    public ResponseEntity<CustomerResponse> createCustomer(@RequestBody CustomerCreationRequest customerCreationRequest)
+    public ResponseEntity<CustomerResponse> createCustomer(@Valid @RequestBody CustomerCreationRequest customerCreationRequest)
     {
         CustomerResponse customerResponse = customerService.createCustomer(customerCreationRequest);
         return new ResponseEntity<>(customerResponse, HttpStatus.CREATED);
@@ -44,7 +45,7 @@ public class CustomerController {
 
     @PatchMapping("/{id}")
     public ResponseEntity<CustomerResponse> updateCustomer(@PathVariable Long id,
-                                               @RequestBody CustomerCreationRequest customerCreationRequest)
+                                               @Valid @RequestBody CustomerCreationRequest customerCreationRequest)
     {
         CustomerResponse updatedCustomer = customerService.updateCustomer(id,customerCreationRequest);
         return ResponseEntity.ok(updatedCustomer);

@@ -12,6 +12,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -27,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final JwtService jwtService;
 
     @Override
     @Transactional
@@ -41,7 +45,7 @@ public class UserServiceImpl implements UserService {
         if(userRepository.existsByEmail(userCreationRequest.email()))
         {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "User with given email already exists"+userCreationRequest.email());
+                    "User with given email already exists: "+userCreationRequest.email());
         }
 
         // transfer data to User Object
@@ -67,6 +71,21 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public String verifyUser(UserLoginRequest userLoginRequest) {
-        return "";
+        // Create the token
+        Authentication token = new UsernamePasswordAuthenticationToken(
+                userLoginRequest.username(),
+                userLoginRequest.password()
+        );
+        try
+        {
+            Authentication authenticate = authenticationManager.authenticate(token);
+            // Set the user in SecurityContextHolder
+            SecurityContextHolder.getContext().setAuthentication(authenticate);
+            return jwtService.generateToken(userLoginRequest.username());
+        }
+        catch (Exception e)
+        {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
     }
 }
