@@ -1,10 +1,7 @@
 package com.nik07roxx.apexPay.Entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,6 +21,22 @@ public class Role {
     @Column(name = "name", unique = true, nullable = false)
     private String name;
 
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     @ManyToMany(mappedBy = "roles")
     private Set<User> users = new HashSet<>();
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(this == o) return true;
+        if (!(o instanceof Role)) return false;
+        Role role = (Role) o;
+        return name != null && name.equals(role.getName());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

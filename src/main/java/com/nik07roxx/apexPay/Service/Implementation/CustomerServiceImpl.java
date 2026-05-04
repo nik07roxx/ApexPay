@@ -13,11 +13,15 @@ import com.nik07roxx.apexPay.Repository.AccountRepository;
 import com.nik07roxx.apexPay.Repository.CustomerRepository;
 import com.nik07roxx.apexPay.Service.AccountService;
 import com.nik07roxx.apexPay.Service.CustomerService;
+import com.nik07roxx.apexPay.exceptions.CustomerNotFoundException;
 import com.nik07roxx.apexPay.model.AccountStatus;
 import com.nik07roxx.apexPay.model.AccountType;
 import com.nik07roxx.apexPay.model.CustomerStatus;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
     private final CustomerRepository customerRepository;
@@ -41,6 +46,7 @@ public class CustomerServiceImpl implements CustomerService {
         // check if email already exists in DB
         if(customerRepository.existsByEmail(customerCreationRequest.email()))
         {
+            log.error("Customer with this email: {} already exists.",customerCreationRequest.email());
             throw new ResponseStatusException(HttpStatus.CONFLICT,"Customer with this email already exists.");
         }
 
@@ -53,6 +59,7 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setPhone(customerCreationRequest.phone());
         customer.setStatus(CustomerStatus.ACTIVE);
 
+        log.info("Creating customer for {} {}.", customer.getFirstName(), customer.getLastName());
         Customer savedCustomer = customerRepository.save(customer);
 
         // create a default account for the customer
@@ -75,34 +82,29 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
-    public List<CustomerResponse> findAllCustomers() {
+    public Page<CustomerResponse> findAllCustomers(Pageable pageable) {
         // retrieve all customers from DB
-        List<Customer> customers= customerRepository.findByStatus(CustomerStatus.ACTIVE);
-        List<CustomerResponse> cleanedCustomers = new ArrayList<>();
-
-        // insert all customers into a customer response list in a loop
-        for(Customer currentCustomer: customers)
-        {
-            CustomerResponse customerResponse = new CustomerResponse(
-                    currentCustomer.getId(),
-                    currentCustomer.getFirstName(),
-                    currentCustomer.getLastName(),
-                    currentCustomer.getEmail(),
-                    currentCustomer.getPhone(),
-                    currentCustomer.getAddress(),
-                    currentCustomer.getStatus()
-            );
-            cleanedCustomers.add(customerResponse);
-        }
-        return cleanedCustomers;
+        log.info("Finding all customers in system.");
+        Page<Customer> customers= customerRepository.findByStatus(CustomerStatus.ACTIVE, pageable);
+        return customers.map(customer -> new CustomerResponse(
+                customer.getId(),
+                customer.getFirstName(),
+                customer.getLastName(),
+                customer.getEmail(),
+                customer.getPhone(),
+                customer.getAddress(),
+                customer.getStatus()
+        ));
     }
 
     @Override
     public CustomerResponse findCustomerById(Long id) {
+        log.info("Finding customer with id: {}.", id);
         Customer currentCustomer = customerRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "No customer found with id: "+id));
+                .orElseThrow(() -> {
+                    log.error("No customer found with id: {}", id);
+                    return new CustomerNotFoundException("Customer not found: " + id);
+                });
         CustomerResponse customerResponse = new CustomerResponse(
                 currentCustomer.getId(),
                 currentCustomer.getFirstName(),
@@ -119,10 +121,12 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional
     public CustomerResponse updateCustomer(Long id, CustomerCreationRequest customerCreationRequest) {
         // validate if customer exists
+        log.info("Finding customer with id: {} for updation.", id);
         Customer currentCustomer = customerRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "No customer found with id: "+id));
+                .orElseThrow(() -> {
+                    log.error("No customer found with id: {}", id);
+                    return new CustomerNotFoundException("Customer not found: " + id);
+                });
 
         if(customerCreationRequest.firstName() != null)
             currentCustomer.setFirstName(customerCreationRequest.firstName());
@@ -135,6 +139,7 @@ public class CustomerServiceImpl implements CustomerService {
         if(customerCreationRequest.address() != null)
             currentCustomer.setAddress(customerCreationRequest.address());
 
+        log.info("Saving customer with id: {} with updated details.", id);
         Customer savedCustomer = customerRepository.save(currentCustomer);
 
         CustomerResponse customerResponse = new CustomerResponse(
@@ -153,23 +158,31 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional
     public void deleteCustomerById(Long id) {
         // check if customer exists
+        log.info("Finding customer with id: {} for deletion.", id);
         Customer savedCustomer = customerRepository.findById(id)
-                        .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "No customer found with id: "+id));
+                        .orElseThrow(() -> {
+                            log.error("No customer found with id: {}", id);
+                            return new CustomerNotFoundException("Customer not found: " + id);
+                        });
 
         // check if customer has any account with money, or debt, before closing
         if(savedCustomer.getAccounts().stream()
                 .anyMatch(a -> a.getBalance().compareTo(BigDecimal.ZERO) != 0))
         {
+            log.error("Cannot close customer {} due to their accounts having active balances}", id);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot close customer with active balances");
         }
 
         // close all their accounts first
         savedCustomer.getAccounts()
-                .forEach(account -> account.setStatus(AccountStatus.CLOSED));
+                .forEach(account -> {
+                    log.info("Marking account {} as CLOSED for customer deletion.", account.getAccountNumber());
+                    account.setStatus(AccountStatus.CLOSED);
+                });
 
         // close the customer
         savedCustomer.setStatus(CustomerStatus.CLOSED);
+        log.info("Marking customer with id: {} as CLOSED for deletion.", id);
         customerRepository.save(savedCustomer);
     }
 }

@@ -4,6 +4,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +14,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
+
+    private final UserDetailsServiceImpl userDetailsService;
 
     // Must be at least 32 characters long for HS256
     private static final String SECRET_KEY = "YourSuperSecretKeyForApexPayProjectSecureAndLong";
@@ -32,11 +38,17 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    public String generateToken(String username) {
-        return generateToken(new HashMap<>(), username);
+    public String generateToken(String username, UserDetails userDetails) {
+        return generateToken(new HashMap<>(), username, userDetails);
     }
 
-    public String generateToken(Map<String, Object> extraClaims, String username) {
+    public String generateToken(Map<String, Object> extraClaims, String username, UserDetails userDetails) {
+        // Extract the roles (authorities) and add them as a claim
+        String roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(","));
+        extraClaims.put("roles",roles);
+
         return Jwts.builder()
                 .setClaims(extraClaims)
                 .setSubject(username)

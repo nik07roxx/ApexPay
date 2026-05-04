@@ -8,8 +8,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -20,25 +20,33 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor // Automatically injects UserDetailsServiceImpl
 public class SpringSecurity {
 
     private final JwtFilter jwtFilter;
     private final UserDetailsServiceImpl userDetailsService;
 
+    private static final String[] WHITELIST = {
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/api/auth/**", // Registration/Login public
+            "/error"
+    };
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for APIs
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // Registration/Login public
+                        .requestMatchers(WHITELIST).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/accounts/**").hasRole("USER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/accounts/**").hasRole("USER")
                         .requestMatchers(HttpMethod.GET, "/api/v1/customers/**").hasRole("USER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/customers/**").hasRole("USER")
                         .requestMatchers(HttpMethod.GET, "/api/v1/transactions/**").hasRole("USER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/transactions/**").hasRole("USER")
-                        .requestMatchers("/error").permitAll() // ADD THIS LINE
                         .anyRequest().authenticated() // "Secure by default"
                 )
                 .sessionManagement(session -> session

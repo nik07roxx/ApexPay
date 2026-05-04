@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "transactions")
-@Data
+@Getter @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class Transactions {
@@ -43,4 +43,18 @@ public class Transactions {
     // Only used when transaction type is TRANSFER, for the account being credited
     @Column(name = "target_account")
     private String targetAccount;
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(this == o) return true;
+        if (!(o instanceof Transactions)) return false;
+        Transactions transactions = (Transactions) o;
+        return id != null && id.equals(transactions.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

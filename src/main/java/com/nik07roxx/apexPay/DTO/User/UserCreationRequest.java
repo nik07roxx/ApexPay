@@ -14,5 +14,7 @@ public record UserCreationRequest(
 
         @Email(message = "Please provide a valid email")
         @NotBlank(message = "Email is required")
-        String email
+        String email,
+
+        boolean isAdmin
 ) {}

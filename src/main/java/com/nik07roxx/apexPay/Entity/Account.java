@@ -12,7 +12,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "account")
-@Data
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Account {
@@ -47,4 +47,18 @@ public class Account {
             cascade = CascadeType.REFRESH)
     @JoinColumn(name = "customer_id")
     private Customer customer;
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(this == o) return true;
+        if (!(o instanceof Account)) return false;
+        Account account = (Account) o;
+        return id != null && id.equals(account.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

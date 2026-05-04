@@ -8,7 +8,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "customer")
-@Data
+@Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class Customer {
@@ -39,4 +39,18 @@ public class Customer {
     @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     private List<Account> accounts;
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(this == o) return true;
+        if (!(o instanceof Customer)) return false;
+        Customer customer = (Customer) o;
+        return id != null && id.equals(customer.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

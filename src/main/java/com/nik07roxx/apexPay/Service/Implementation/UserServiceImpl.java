@@ -15,6 +15,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -54,9 +55,22 @@ public class UserServiceImpl implements UserService {
         user.setUsername(userCreationRequest.username());
         // hash the password before setting it in user object
         user.setPassword(bCryptPasswordEncoder.encode(userCreationRequest.password()));
+
+        // Set the roles in the User object
+        Set<Role> roles = new HashSet<>();
         Role roleForUser = roleRepository.findByName("USER")
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No role found called USER."));
-        user.setRoles(Set.of(roleForUser));
+        roles.add(roleForUser);
+
+        // Add code here to check input and see if flag for admin is marked, if yes then add admin role too
+        if(userCreationRequest.isAdmin())
+        {
+            Role roleForAdmin = roleRepository.findByName("ADMIN")
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No role found called ADMIN."));
+            roles.add(roleForAdmin);
+        }
+
+        user.setRoles(roles);
 
         // save the User object
         User savedUser = userRepository.save(user);
@@ -81,7 +95,10 @@ public class UserServiceImpl implements UserService {
             Authentication authenticate = authenticationManager.authenticate(token);
             // Set the user in SecurityContextHolder
             SecurityContextHolder.getContext().setAuthentication(authenticate);
-            return jwtService.generateToken(userLoginRequest.username());
+            // Extract UserDetails from the auth object
+            UserDetails userDetails = (UserDetails) authenticate.getPrincipal();
+
+            return jwtService.generateToken(userLoginRequest.username(), userDetails);
         }
         catch (Exception e)
         {
