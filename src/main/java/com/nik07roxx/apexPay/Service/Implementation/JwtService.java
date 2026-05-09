@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -22,11 +23,12 @@ public class JwtService {
 
     private final UserDetailsServiceImpl userDetailsService;
 
-    // Must be at least 32 characters long for HS256
-    private static final String SECRET_KEY = "YourSuperSecretKeyForApexPayProjectSecureAndLong";
+    // Inject the key from your application properties
+    @Value("${app.jwt.secret}")
+    private String secretKey;
 
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+        return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
     public String extractUsername(String token) {
