@@ -4,7 +4,6 @@ import com.nik07roxx.apexPay.Repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -17,7 +16,7 @@ public class ReferenceNumberGenerator {
         // Your logic here (Random, Sequence-based, etc.)
         int length = 10;
         // Using ThreadLocalRandom is more efficient in Spring services
-        long min = (long) Math.pow(10, length - 1); // 1,000,000,000
+        long min = (long) Math.pow(10, length - (double)1); // 1,000,000,000
         long max = (long) Math.pow(10, length) - 1; // 9,999,999,999
 
         long result = ThreadLocalRandom.current().nextLong(min, max + 1);

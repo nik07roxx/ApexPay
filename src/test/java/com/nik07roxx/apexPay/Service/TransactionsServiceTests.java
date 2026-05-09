@@ -162,4 +162,35 @@ public class TransactionsServiceTests {
         assertTrue(result.isEmpty());
         assertEquals(0, result.getTotalElements());
     }
+
+    @Test
+    public void testTransfer_SavesTransactionRecord()
+    {
+        // setup
+        Account sourceAcc = new Account();
+        sourceAcc.setAccountNumber("101");
+        sourceAcc.setBalance(new BigDecimal("50.00"));
+        Account targetAcc = new Account();
+        targetAcc.setAccountNumber("102");
+        targetAcc.setBalance(new BigDecimal("50.00"));
+        TransferRequest request = new TransferRequest(new BigDecimal("50.00"), "101", "102", "Transfer");
+
+        // when mocks
+        when(accountRepository.findByAccountNumber(eq("101"))).thenReturn(Optional.of(sourceAcc));
+        when(accountRepository.findByAccountNumber(eq("102"))).thenReturn(Optional.of(targetAcc));
+        when(referenceNumberGenerator.generateUniqueTransactionReference()).thenReturn("REF123456789");
+        when(transactionsRepository.save(any(Transactions.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // action (use argumentCaptor before save
+        transactionsService.transfer(request);
+
+        ArgumentCaptor<Transactions> captor = ArgumentCaptor.forClass(Transactions.class);
+        verify(transactionsRepository, times(1)).save(captor.capture());
+
+        // get data from captor and verify
+        Transactions value = captor.getValue();
+        assertEquals("REF123456789", value.getTransactionReference());
+        assertEquals(new BigDecimal("50.00"), value.getAmount());
+    }
 }
