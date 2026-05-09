@@ -1,5 +1,6 @@
 package com.nik07roxx.apexPay.integration;
 
+import com.nik07roxx.apexPay.ApexPayApplication;
 import com.nik07roxx.apexPay.DTO.Customer.CustomerCreationRequest;
 import com.nik07roxx.apexPay.DTO.Customer.CustomerResponse;
 import com.nik07roxx.apexPay.Entity.Account;
@@ -16,10 +17,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@SpringBootTest(classes = ApexPayApplication.class)
+@ActiveProfiles("test")
 @Transactional // This rolls back changes after each test so your DB stays clean!
 public class CustomerIntegrationTest {
 
