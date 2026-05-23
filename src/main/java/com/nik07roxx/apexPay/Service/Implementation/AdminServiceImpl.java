@@ -58,6 +58,7 @@ public class AdminServiceImpl implements AdminService {
                 account.getAccountNumber(),
                 account.getAccountType(),
                 account.getBalance(),
+                account.getAccountCurrency(),
                 account.getInterestRate(),
                 account.getOpeningDate(),
                 account.getStatus())

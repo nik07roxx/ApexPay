@@ -1,5 +1,6 @@
 package com.nik07roxx.apexPay.Service.Implementation;
 
+import com.nik07roxx.apexPay.DTO.Currency.CurrencyConvertorResponse;
 import com.nik07roxx.apexPay.DTO.Transactions.DepositRequest;
 import com.nik07roxx.apexPay.DTO.Transactions.TransactionResponse;
 import com.nik07roxx.apexPay.DTO.Transactions.TransferRequest;
@@ -12,6 +13,7 @@ import com.nik07roxx.apexPay.Service.TransactionsService;
 import com.nik07roxx.apexPay.exceptions.AccountNotFoundException;
 import com.nik07roxx.apexPay.exceptions.InsufficientFundsException;
 import com.nik07roxx.apexPay.exceptions.InvalidRequestException;
+import com.nik07roxx.apexPay.model.CurrencyType;
 import com.nik07roxx.apexPay.model.TransactionType;
 import com.nik07roxx.apexPay.util.ReferenceNumberGenerator;
 import jakarta.transaction.Transactional;
@@ -26,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.List;
 
 @Service
@@ -36,6 +39,7 @@ public class TransactionsServiceImpl implements TransactionsService {
     private final ReferenceNumberGenerator referenceNumberGenerator;
     private final TransactionsRepository transactionsRepository;
     private final AccountRepository accountRepository;
+    private final CurrencyConvertorService currencyConvertorService;
 
     @Override
     @Transactional
@@ -64,9 +68,14 @@ public class TransactionsServiceImpl implements TransactionsService {
         // create a new transaction and assign the data
         Transactions newTransaction = new Transactions();
         newTransaction.setTransactionType(TransactionType.DEPOSIT);
-        newTransaction.setAmount(depositRequest.amount());
-        newTransaction.setDescription(depositRequest.description());
+        newTransaction.setSourceAccount("CASH");
         newTransaction.setTargetAccount(accountNumber);
+        newTransaction.setSourceAmount(depositRequest.amount());
+        newTransaction.setTargetAmount(depositRequest.amount());
+        newTransaction.setSourceCurrency(foundAccount.getAccountCurrency());
+        newTransaction.setTargetCurrency(foundAccount.getAccountCurrency());
+        newTransaction.setExchangeRate(new BigDecimal("1.0"));
+        newTransaction.setDescription(depositRequest.description());
         newTransaction.setTransactionReference(referenceNumberGenerator.generateUniqueTransactionReference());
 
         // Save the transaction
@@ -79,9 +88,13 @@ public class TransactionsServiceImpl implements TransactionsService {
         TransactionResponse transactionResponse = new TransactionResponse(
                 "APX-"+savedTransactions.getTransactionReference().substring(0, 8).toUpperCase(),
                 savedTransactions.getTransactionType(),
-                savedTransactions.getAmount(),
                 savedTransactions.getSourceAccount(),
+                savedTransactions.getSourceAmount(),
+                savedTransactions.getSourceCurrency(),
                 savedTransactions.getTargetAccount(),
+                savedTransactions.getTargetAmount(),
+                savedTransactions.getTargetCurrency(),
+                savedTransactions.getExchangeRate(),
                 savedTransactions.getDescription(),
                 savedTransactions.getTimestamp()
         );
@@ -123,9 +136,14 @@ public class TransactionsServiceImpl implements TransactionsService {
         // create a new transaction and assign the data
         Transactions newTransaction = new Transactions();
         newTransaction.setTransactionType(TransactionType.WITHDRAWAL);
-        newTransaction.setAmount(withdrawRequest.amount());
-        newTransaction.setDescription(withdrawRequest.description());
         newTransaction.setSourceAccount(accountNumber);
+        newTransaction.setTargetAccount("CASH");
+        newTransaction.setSourceAmount(withdrawRequest.amount());
+        newTransaction.setTargetAmount(withdrawRequest.amount());
+        newTransaction.setSourceCurrency(foundAccount.getAccountCurrency());
+        newTransaction.setTargetCurrency(foundAccount.getAccountCurrency());
+        newTransaction.setExchangeRate(new BigDecimal("1.0"));
+        newTransaction.setDescription(withdrawRequest.description());
         newTransaction.setTransactionReference(referenceNumberGenerator.generateUniqueTransactionReference());
 
         // Save the transaction
@@ -138,9 +156,13 @@ public class TransactionsServiceImpl implements TransactionsService {
         TransactionResponse transactionResponse = new TransactionResponse(
                 "APX-"+savedTransactions.getTransactionReference().substring(0, 8).toUpperCase(),
                 savedTransactions.getTransactionType(),
-                savedTransactions.getAmount(),
                 savedTransactions.getSourceAccount(),
+                savedTransactions.getSourceAmount(),
+                savedTransactions.getSourceCurrency(),
                 savedTransactions.getTargetAccount(),
+                savedTransactions.getTargetAmount(),
+                savedTransactions.getTargetCurrency(),
+                savedTransactions.getExchangeRate(),
                 savedTransactions.getDescription(),
                 savedTransactions.getTimestamp()
         );
@@ -189,9 +211,6 @@ public class TransactionsServiceImpl implements TransactionsService {
             log.error("Source Account {} has less balance than transfer request.", sourceAccountNumber);
             throw new InsufficientFundsException("Source Account has less balance than transfer request.");
         }
-        foundWithdrawAccount.setBalance(currentSourceBalance.subtract(transferRequest.amount()));
-        log.info("Saving account with account number {} for transfer.", sourceAccountNumber);
-        accountRepository.save(foundWithdrawAccount);
 
         // Add amount to target account's balance and save it again
         log.info("Finding target account with account number {} for transfer.", targetAccountNumber);
@@ -201,17 +220,51 @@ public class TransactionsServiceImpl implements TransactionsService {
                     return new AccountNotFoundException("Account not found: " + targetAccountNumber);
                 });
         BigDecimal currentTargetBalance = foundTargetAccount.getBalance();
-        foundTargetAccount.setBalance(currentTargetBalance.add(transferRequest.amount()));
+
+        // check if both account currencies are the same or not
+        BigDecimal rateOfConversion = null;
+        CurrencyType sourceAccCurrency = foundWithdrawAccount.getAccountCurrency();
+        CurrencyType targetAccCurrency = foundTargetAccount.getAccountCurrency();
+        if(sourceAccCurrency.equals(targetAccCurrency))
+        {
+            // if transfer is in the same currency
+            rateOfConversion = new BigDecimal("1.0");
+        }
+        else
+        {
+            // if source and transfer account have different currencies
+            CurrencyConvertorResponse convertedCurrencyAmount =
+                    currencyConvertorService.getConvertedCurrencyAmount(sourceAccCurrency);
+
+            rateOfConversion = convertedCurrencyAmount.getRate(targetAccCurrency.toString());
+        }
+
+        BigDecimal debitAmount = transferRequest.amount();
+        foundWithdrawAccount.setBalance(currentSourceBalance.subtract(debitAmount));
+
+        // convert the credit amount to same conversion rate as debit amount
+        // 1.0 for same currency txn, derived for different currency txn
+        BigDecimal creditAmount = transferRequest.amount();
+        creditAmount = creditAmount.multiply(rateOfConversion);
+        foundTargetAccount.setBalance(currentTargetBalance.add(creditAmount));
+
+        log.info("Saving account with account number {} for transfer.", sourceAccountNumber);
+        accountRepository.save(foundWithdrawAccount);
+
         log.info("Saving account with account number {} for transfer.", targetAccountNumber);
         accountRepository.save(foundTargetAccount);
 
         // create a new transaction and assign the data
         Transactions newTransaction = new Transactions();
         newTransaction.setTransactionType(TransactionType.TRANSFER);
-        newTransaction.setAmount(transferRequest.amount());
-        newTransaction.setDescription(transferRequest.description());
         newTransaction.setSourceAccount(sourceAccountNumber);
         newTransaction.setTargetAccount(targetAccountNumber);
+        newTransaction.setSourceAmount(debitAmount);
+        newTransaction.setTargetAmount(creditAmount);
+        newTransaction.setSourceCurrency(sourceAccCurrency);
+        newTransaction.setTargetCurrency(targetAccCurrency);
+        newTransaction.setExchangeRate(rateOfConversion);
+        newTransaction.setDescription(transferRequest.description());
         newTransaction.setTransactionReference(referenceNumberGenerator.generateUniqueTransactionReference());
 
         // Save the transaction
@@ -225,9 +278,13 @@ public class TransactionsServiceImpl implements TransactionsService {
         TransactionResponse transactionResponse = new TransactionResponse(
                 "APX-"+savedTransactions.getTransactionReference().substring(0, 8).toUpperCase(),
                 savedTransactions.getTransactionType(),
-                savedTransactions.getAmount(),
                 savedTransactions.getSourceAccount(),
+                savedTransactions.getSourceAmount(),
+                savedTransactions.getSourceCurrency(),
                 savedTransactions.getTargetAccount(),
+                savedTransactions.getTargetAmount(),
+                savedTransactions.getTargetCurrency(),
+                savedTransactions.getExchangeRate(),
                 savedTransactions.getDescription(),
                 savedTransactions.getTimestamp()
         );
@@ -246,9 +303,13 @@ public class TransactionsServiceImpl implements TransactionsService {
         return foundTransactions.map(transaction -> new TransactionResponse(
                 "APX-"+transaction.getTransactionReference().substring(0, 8).toUpperCase(),
                 transaction.getTransactionType(),
-                transaction.getAmount(),
                 transaction.getSourceAccount(),
+                transaction.getSourceAmount(),
+                transaction.getSourceCurrency(),
                 transaction.getTargetAccount(),
+                transaction.getTargetAmount(),
+                transaction.getTargetCurrency(),
+                transaction.getExchangeRate(),
                 transaction.getDescription(),
                 transaction.getTimestamp()
         ));
@@ -265,11 +326,25 @@ public class TransactionsServiceImpl implements TransactionsService {
         return foundTransactions.map(transaction -> new TransactionResponse(
                 "APX-"+transaction.getTransactionReference().substring(0, 8).toUpperCase(),
                 transaction.getTransactionType(),
-                transaction.getAmount(),
                 transaction.getSourceAccount(),
+                transaction.getSourceAmount(),
+                transaction.getSourceCurrency(),
                 transaction.getTargetAccount(),
+                transaction.getTargetAmount(),
+                transaction.getTargetCurrency(),
+                transaction.getExchangeRate(),
                 transaction.getDescription(),
                 transaction.getTimestamp()
         ));
+    }
+
+    @Override
+    public String rateCheck(CurrencyType fromCurrency, CurrencyType toCurrency) {
+        CurrencyConvertorResponse convertedCurrencyAmount = currencyConvertorService.getConvertedCurrencyAmount(fromCurrency);
+        return "%s %s is equal to %s %s."
+                .formatted(convertedCurrencyAmount.getRate(fromCurrency.toString()),
+                        fromCurrency,
+                        convertedCurrencyAmount.getRate(toCurrency.toString()),
+                        toCurrency);
     }
 }

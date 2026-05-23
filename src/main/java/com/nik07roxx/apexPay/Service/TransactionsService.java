@@ -4,6 +4,7 @@ import com.nik07roxx.apexPay.DTO.Transactions.DepositRequest;
 import com.nik07roxx.apexPay.DTO.Transactions.TransactionResponse;
 import com.nik07roxx.apexPay.DTO.Transactions.TransferRequest;
 import com.nik07roxx.apexPay.DTO.Transactions.WithdrawRequest;
+import com.nik07roxx.apexPay.model.CurrencyType;
 import jakarta.transaction.InvalidTransactionException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,4 +17,5 @@ public interface TransactionsService {
     TransactionResponse transfer(TransferRequest transferRequest);
     Page<TransactionResponse> findTransactionsByTransactionReference(String transactionReference, Pageable pageable);
     Page<TransactionResponse> findTransactionsByAccountNumber(String accountNumber, Pageable pageable);
+    String rateCheck(CurrencyType fromCurrency, CurrencyType toCurrency);
 }

@@ -9,6 +9,7 @@ import com.nik07roxx.apexPay.Repository.CustomerRepository;
 import com.nik07roxx.apexPay.Service.Implementation.AccountServiceImpl;
 import com.nik07roxx.apexPay.exceptions.AccountNotFoundException;
 import com.nik07roxx.apexPay.model.AccountType;
+import com.nik07roxx.apexPay.model.CurrencyType;
 import com.nik07roxx.apexPay.model.CustomerStatus;
 import com.nik07roxx.apexPay.util.ReferenceNumberGenerator;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,7 @@ public class AccountServiceTests {
         AccountCreationRequest accountCreationRequest = new AccountCreationRequest(
                 AccountType.CURRENT,
                 new BigDecimal("55.00"),
+                CurrencyType.INR,
                 1L
         );
 

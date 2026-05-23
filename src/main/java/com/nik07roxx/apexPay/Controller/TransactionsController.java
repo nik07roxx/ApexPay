@@ -6,6 +6,7 @@ import com.nik07roxx.apexPay.DTO.Transactions.TransferRequest;
 import com.nik07roxx.apexPay.DTO.Transactions.WithdrawRequest;
 import com.nik07roxx.apexPay.Service.Implementation.TransactionsServiceImpl;
 import com.nik07roxx.apexPay.Service.TransactionsService;
+import com.nik07roxx.apexPay.model.CurrencyType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -74,5 +75,12 @@ public class TransactionsController {
              @Parameter(description = "Size of page", example = "10") @RequestParam(defaultValue = "10") int size)
     {
         return ResponseEntity.ok(transactionsService.findTransactionsByAccountNumber(accountNumber, pageable));
+    }
+
+    @GetMapping("/rate-check")
+    public ResponseEntity<String> convertCurrencyRate(@RequestParam CurrencyType from,
+                                      @RequestParam CurrencyType to)
+    {
+        return ResponseEntity.ok(transactionsService.rateCheck(from, to));
     }
 }

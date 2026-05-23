@@ -53,6 +53,7 @@ public class AccountServiceImpl implements AccountService {
         account.setAccountType(accountRequest.accountType());
         account.setStatus(AccountStatus.ACTIVE);
         account.setCustomer(customer);
+        account.setAccountCurrency(accountRequest.accountCurrency());
         account.setAccountNumber(referenceNumberGenerator.generateUniqueAccountNumber());
 
         if(accountRequest.balance() == null)
@@ -75,6 +76,7 @@ public class AccountServiceImpl implements AccountService {
                 savedAccount.getAccountNumber(),
                 savedAccount.getAccountType(),
                 savedAccount.getBalance(),
+                savedAccount.getAccountCurrency(),
                 savedAccount.getInterestRate(),
                 savedAccount.getOpeningDate(),
                 savedAccount.getStatus()
@@ -90,6 +92,7 @@ public class AccountServiceImpl implements AccountService {
                 account.getAccountNumber(),
                 account.getAccountType(),
                 account.getBalance(),
+                account.getAccountCurrency(),
                 account.getInterestRate(),
                 account.getOpeningDate(),
                 account.getStatus()
@@ -104,6 +107,7 @@ public class AccountServiceImpl implements AccountService {
                 account.getAccountNumber(),
                 account.getAccountType(),
                 account.getBalance(),
+                account.getAccountCurrency(),
                 account.getInterestRate(),
                 account.getOpeningDate(),
                 account.getStatus()
@@ -122,6 +126,7 @@ public class AccountServiceImpl implements AccountService {
                 foundAccount.getAccountNumber(),
                 foundAccount.getAccountType(),
                 foundAccount.getBalance(),
+                foundAccount.getAccountCurrency(),
                 foundAccount.getInterestRate(),
                 foundAccount.getOpeningDate(),
                 foundAccount.getStatus()
@@ -164,6 +169,8 @@ public class AccountServiceImpl implements AccountService {
             foundAccount.setAccountType(accountRequest.accountType());
         if(accountRequest.balance() != null)
             foundAccount.setBalance(accountRequest.balance());
+        if(accountRequest.accountCurrency() != null)
+            foundAccount.setAccountCurrency(accountRequest.accountCurrency());
         if(accountRequest.accountType() != null)
         {
             if(accountRequest.accountType() == AccountType.SAVINGS)
@@ -179,6 +186,7 @@ public class AccountServiceImpl implements AccountService {
                 savedAccount.getAccountNumber(),
                 savedAccount.getAccountType(),
                 savedAccount.getBalance(),
+                savedAccount.getAccountCurrency(),
                 savedAccount.getInterestRate(),
                 savedAccount.getOpeningDate(),
                 savedAccount.getStatus()

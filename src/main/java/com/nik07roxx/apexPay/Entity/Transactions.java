@@ -1,5 +1,6 @@
 package com.nik07roxx.apexPay.Entity;
 
+import com.nik07roxx.apexPay.model.CurrencyType;
 import com.nik07roxx.apexPay.model.TransactionType;
 import jakarta.persistence.*;
 import lombok.*;
@@ -19,9 +20,6 @@ public class Transactions {
     @Column(name = "id")
     private Long id;
 
-    @Column(name = "amount", nullable = false)
-    private BigDecimal amount;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "transaction_type", nullable = false)
     private TransactionType transactionType;
@@ -40,9 +38,26 @@ public class Transactions {
     @Column(name = "source_account")
     private String sourceAccount;
 
+    @Column(name = "source_amount", nullable = false)
+    private BigDecimal sourceAmount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source_currency", nullable = false)
+    private CurrencyType sourceCurrency;
+
     // Only used when transaction type is TRANSFER, for the account being credited
     @Column(name = "target_account")
     private String targetAccount;
+
+    @Column(name = "target_amount", nullable = false)
+    private BigDecimal targetAmount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "target_currency", nullable = false)
+    private CurrencyType targetCurrency;
+
+    @Column(name = "exchange_rate", nullable = false)
+    private BigDecimal exchangeRate;
 
     @Override
     public boolean equals(Object o)

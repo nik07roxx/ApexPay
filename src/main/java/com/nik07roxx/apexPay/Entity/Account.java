@@ -2,6 +2,7 @@ package com.nik07roxx.apexPay.Entity;
 
 import com.nik07roxx.apexPay.model.AccountStatus;
 import com.nik07roxx.apexPay.model.AccountType;
+import com.nik07roxx.apexPay.model.CurrencyType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -30,6 +31,10 @@ public class Account {
 
     @Column(name = "balance")
     private BigDecimal balance;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name="account_currency")
+    private CurrencyType accountCurrency;
 
     @Column(name = "interest_rate")
     private BigDecimal interestRate;

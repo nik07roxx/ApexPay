@@ -16,6 +16,7 @@ import com.nik07roxx.apexPay.Service.CustomerService;
 import com.nik07roxx.apexPay.exceptions.CustomerNotFoundException;
 import com.nik07roxx.apexPay.model.AccountStatus;
 import com.nik07roxx.apexPay.model.AccountType;
+import com.nik07roxx.apexPay.model.CurrencyType;
 import com.nik07roxx.apexPay.model.CustomerStatus;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -66,6 +67,7 @@ public class CustomerServiceImpl implements CustomerService {
         AccountResponse defaultAccount = accountService.createAccount(new AccountCreationRequest(
                                                                 AccountType.CURRENT,
                                                                 BigDecimal.ZERO,
+                                                                CurrencyType.INR,
                                                                 savedCustomer.getId()));
 
         // return the response
