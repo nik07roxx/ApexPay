@@ -20,15 +20,30 @@ public class CurrencyConvertorService {
     private String apiKey;
 
     private final RestTemplate restTemplate;
+    private final RedisService redisService;
 
     public CurrencyConvertorResponse getConvertedCurrencyAmount(CurrencyType currencyInput)
     {
-        // correct the API URL
-        String apiUrlWithInfo = apiUrl.replace("API_KEY", apiKey).replace("CUR", currencyInput.toString());
-        ResponseEntity<CurrencyConvertorResponse> exchange = restTemplate.exchange(apiUrlWithInfo, HttpMethod.GET, null, CurrencyConvertorResponse.class);
-        if(exchange.getStatusCode() == HttpStatus.OK)
-            return exchange.getBody();
-        else
-            throw new RuntimeException("No currency found to exchange for: "+currencyInput);
+        CurrencyConvertorResponse currencyConvertorResponse =
+                redisService.get("currencies_of_" + currencyInput.toString(),
+                        CurrencyConvertorResponse.class);
+        if(currencyConvertorResponse != null) // Return response from cache
+        {
+            return currencyConvertorResponse;
+        }
+        else // Return response from External API
+        {
+            String apiUrlWithInfo = apiUrl.replace("API_KEY", apiKey).replace("CUR", currencyInput.toString());
+            ResponseEntity<CurrencyConvertorResponse> exchange = restTemplate.exchange(apiUrlWithInfo, HttpMethod.GET, null, CurrencyConvertorResponse.class);
+            if(exchange.getStatusCode() == HttpStatus.OK) {
+                // store in Cache for later use
+                redisService.set("currencies_of_" + currencyInput.toString(),
+                        exchange.getBody(), 300L);
+                return exchange.getBody();
+            }
+            else {
+                throw new RuntimeException("No currency found to exchange for: " + currencyInput);
+            }
+        }
     }
 }
