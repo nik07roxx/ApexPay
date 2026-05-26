@@ -1,14 +1,19 @@
 package com.nik07roxx.apexPay.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import java.time.Duration;
 
 @Configuration
+@EnableCaching
 public class RedisConfig {
 
     // 1. Manually inject the explicit host, port, and password fields
@@ -34,13 +39,24 @@ public class RedisConfig {
 
     // 3. Pass your manually controlled factory straight into the template
     @Bean
-    public RedisTemplate<String, String> redisTemplate() {
+    public RedisTemplate<String, String> redisTemplate(LettuceConnectionFactory connectionFactory) {
         RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory()); // Uses your cloud factory!
+        redisTemplate.setConnectionFactory(connectionFactory); // 👈 Injected parameter!
 
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         redisTemplate.setValueSerializer(new StringRedisSerializer());
 
         return redisTemplate;
+    }
+
+    @Bean
+    public RedisCacheManager cacheManager(LettuceConnectionFactory connectionFactory) {
+        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(10))
+                .disableCachingNullValues();
+
+        return RedisCacheManager.builder(connectionFactory) // 👈 Injected parameter!
+                .cacheDefaults(config)
+                .build();
     }
 }

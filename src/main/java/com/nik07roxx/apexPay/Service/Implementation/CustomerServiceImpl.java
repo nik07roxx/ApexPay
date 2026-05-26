@@ -21,6 +21,10 @@ import com.nik07roxx.apexPay.model.CustomerStatus;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -100,6 +104,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    @Cacheable(value = "customers", key = "#id")
     public CustomerResponse findCustomerById(Long id) {
         log.info("Finding customer with id: {}.", id);
         Customer currentCustomer = customerRepository.findById(id)
@@ -121,6 +126,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "customers", key = "#id")
     public CustomerResponse updateCustomer(Long id, CustomerCreationRequest customerCreationRequest) {
         // validate if customer exists
         log.info("Finding customer with id: {} for updation.", id);
@@ -158,6 +164,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "customers", key = "#id")
     public void deleteCustomerById(Long id) {
         // check if customer exists
         log.info("Finding customer with id: {} for deletion.", id);
