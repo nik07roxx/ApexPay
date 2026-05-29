@@ -1,10 +1,7 @@
 package com.nik07roxx.apexPay.Service.Implementation;
 
 import com.nik07roxx.apexPay.DTO.Currency.CurrencyConvertorResponse;
-import com.nik07roxx.apexPay.DTO.Transactions.DepositRequest;
-import com.nik07roxx.apexPay.DTO.Transactions.TransactionResponse;
-import com.nik07roxx.apexPay.DTO.Transactions.TransferRequest;
-import com.nik07roxx.apexPay.DTO.Transactions.WithdrawRequest;
+import com.nik07roxx.apexPay.DTO.Transactions.*;
 import com.nik07roxx.apexPay.Entity.Account;
 import com.nik07roxx.apexPay.Entity.Transactions;
 import com.nik07roxx.apexPay.Repository.AccountRepository;
@@ -19,6 +16,7 @@ import com.nik07roxx.apexPay.util.ReferenceNumberGenerator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -36,6 +34,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TransactionsServiceImpl implements TransactionsService {
 
+    private final ApplicationEventPublisher eventPublisher;
     private final ReferenceNumberGenerator referenceNumberGenerator;
     private final TransactionsRepository transactionsRepository;
     private final AccountRepository accountRepository;
@@ -91,13 +90,19 @@ public class TransactionsServiceImpl implements TransactionsService {
                 savedTransactions.getSourceAccount(),
                 savedTransactions.getSourceAmount(),
                 savedTransactions.getSourceCurrency(),
+                foundAccount.getCustomer().getEmail(),
                 savedTransactions.getTargetAccount(),
                 savedTransactions.getTargetAmount(),
                 savedTransactions.getTargetCurrency(),
+                foundAccount.getCustomer().getEmail(),
                 savedTransactions.getExchangeRate(),
                 savedTransactions.getDescription(),
                 savedTransactions.getTimestamp()
         );
+
+        // publish to internal spring event board, to trigger kafka producer
+        eventPublisher.publishEvent(new TransactionCompleteEvent(transactionResponse));
+
         return transactionResponse;
     }
 
@@ -159,13 +164,19 @@ public class TransactionsServiceImpl implements TransactionsService {
                 savedTransactions.getSourceAccount(),
                 savedTransactions.getSourceAmount(),
                 savedTransactions.getSourceCurrency(),
+                foundAccount.getCustomer().getEmail(),
                 savedTransactions.getTargetAccount(),
                 savedTransactions.getTargetAmount(),
                 savedTransactions.getTargetCurrency(),
+                foundAccount.getCustomer().getEmail(),
                 savedTransactions.getExchangeRate(),
                 savedTransactions.getDescription(),
                 savedTransactions.getTimestamp()
         );
+
+        // publish to internal spring event board, to trigger kafka producer
+        eventPublisher.publishEvent(new TransactionCompleteEvent(transactionResponse));
+
         return transactionResponse;
     }
 
@@ -281,13 +292,19 @@ public class TransactionsServiceImpl implements TransactionsService {
                 savedTransactions.getSourceAccount(),
                 savedTransactions.getSourceAmount(),
                 savedTransactions.getSourceCurrency(),
+                foundWithdrawAccount.getCustomer().getEmail(),
                 savedTransactions.getTargetAccount(),
                 savedTransactions.getTargetAmount(),
                 savedTransactions.getTargetCurrency(),
+                foundTargetAccount.getCustomer().getEmail(),
                 savedTransactions.getExchangeRate(),
                 savedTransactions.getDescription(),
                 savedTransactions.getTimestamp()
         );
+
+        // publish to internal spring event board, to trigger kafka producer
+        eventPublisher.publishEvent(new TransactionCompleteEvent(transactionResponse));
+
         return transactionResponse;
     }
 
@@ -306,9 +323,11 @@ public class TransactionsServiceImpl implements TransactionsService {
                 transaction.getSourceAccount(),
                 transaction.getSourceAmount(),
                 transaction.getSourceCurrency(),
+                null,
                 transaction.getTargetAccount(),
                 transaction.getTargetAmount(),
                 transaction.getTargetCurrency(),
+                null,
                 transaction.getExchangeRate(),
                 transaction.getDescription(),
                 transaction.getTimestamp()
@@ -329,9 +348,11 @@ public class TransactionsServiceImpl implements TransactionsService {
                 transaction.getSourceAccount(),
                 transaction.getSourceAmount(),
                 transaction.getSourceCurrency(),
+                null,
                 transaction.getTargetAccount(),
                 transaction.getTargetAmount(),
                 transaction.getTargetCurrency(),
+                null,
                 transaction.getExchangeRate(),
                 transaction.getDescription(),
                 transaction.getTimestamp()

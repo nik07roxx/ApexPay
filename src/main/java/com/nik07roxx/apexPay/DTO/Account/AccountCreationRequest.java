@@ -11,15 +11,13 @@ import java.math.BigDecimal;
 import java.util.Currency;
 
 public record AccountCreationRequest(
-                            @NotBlank(message = "Account type is required")
-                            @Pattern(regexp = "^(SAVINGS|CURRENT)$", message = "Type must be SAVINGS or CURRENT")
+                            @NotNull(message = "Account type is required")
                             @Schema(description = "Account type must either be SAVINGS or CURRENT")
                             AccountType accountType,
                             @PositiveOrZero(message = "Initial balance cannot be negative")
                             @Schema(description = "Initial balance of the account")
                             BigDecimal balance,
                             @NotNull
-                            @Pattern(regexp = "^(INR|USD|EUR)$", message = "Currency must be either INR, EUR or USD")
                             CurrencyType accountCurrency,
                             @NotNull(message = "Customer ID is required")
                             @Schema(description = "Customer's Id for whom the Account is being created")
