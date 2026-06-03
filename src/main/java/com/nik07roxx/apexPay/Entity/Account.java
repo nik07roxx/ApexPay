@@ -55,6 +55,9 @@ public class Account {
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
+    @Version
+    private Integer version;
+
     @Override
     public boolean equals(Object o)
     {
