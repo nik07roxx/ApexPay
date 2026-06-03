@@ -16,6 +16,7 @@ import java.util.List;
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Account {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,6 +44,7 @@ public class Account {
     @Column(name = "opening_date")
     private LocalDateTime openingDate;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private AccountStatus status;
 
