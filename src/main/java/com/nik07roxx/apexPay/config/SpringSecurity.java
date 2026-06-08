@@ -26,13 +26,15 @@ public class SpringSecurity {
 
     private final JwtFilter jwtFilter;
     private final UserDetailsServiceImpl userDetailsService;
+    private final PasswordEncoder passwordEncoder;
 
     private static final String[] WHITELIST = {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/api/auth/**", // Registration/Login public
-            "/error"
+            "/error",
+            "/actuator/**"
     };
 
     @Bean
@@ -59,24 +61,18 @@ public class SpringSecurity {
         return http.build();
     }
 
-    // 1. THE PASSWORD ENCRYPTOR
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    // 2. THE AUTHENTICATION PROVIDER (The Matcher)
+    // THE AUTHENTICATION PROVIDER (The Matcher)
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         // Uses your custom DB logic
         authProvider.setUserDetailsService(userDetailsService);
         // Uses your BCrypt bean, injection internally managed by Spring
-        authProvider.setPasswordEncoder(passwordEncoder());
+        authProvider.setPasswordEncoder(passwordEncoder);
         return authProvider;
     }
 
-    // 2. THE AUTHENTICATION MANAGER (Login Checker)
+    // THE AUTHENTICATION MANAGER (Login Checker)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();

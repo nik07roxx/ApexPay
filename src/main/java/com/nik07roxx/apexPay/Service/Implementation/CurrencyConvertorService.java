@@ -2,6 +2,7 @@ package com.nik07roxx.apexPay.Service.Implementation;
 
 import com.nik07roxx.apexPay.DTO.Currency.CurrencyConvertorResponse;
 import com.nik07roxx.apexPay.model.CurrencyType;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
@@ -22,6 +23,7 @@ public class CurrencyConvertorService {
     private final RestTemplate restTemplate;
     private final RedisService redisService;
 
+    @Timed(value = "apexpay.external.currency.api", description = "Time taken to fetch data from external Currency API")
     public CurrencyConvertorResponse getConvertedCurrencyAmount(CurrencyType currencyInput)
     {
         CurrencyConvertorResponse currencyConvertorResponse =

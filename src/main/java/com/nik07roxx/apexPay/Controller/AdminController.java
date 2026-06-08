@@ -37,8 +37,9 @@ public class AdminController {
     @GetMapping("/users")
     @Operation(summary = "List all users in the system")
     public ResponseEntity<Page<UserViewResponse>> findAllUsers(
-            @Parameter(description = "Pagination parameters")
-            @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable
+            @Parameter(hidden = true) @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable,
+            @Parameter(description = "Page number", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Size of page", example = "10") @RequestParam(defaultValue = "10") int size
     )
     {
         return ResponseEntity.ok(adminService.findAllUsers(pageable));
@@ -47,8 +48,9 @@ public class AdminController {
     @GetMapping("/accounts/all")
     @Operation(summary = "List all accounts in the system")
     public ResponseEntity<Page<AccountResponse>> findAllAccounts(
-            @Parameter(description = "Pagination parameters")
-            @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable
+            @Parameter(hidden = true) @PageableDefault(size = 10, page = 0, sort = "id") Pageable pageable,
+            @Parameter(description = "Page number", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Size of page", example = "10") @RequestParam(defaultValue = "10") int size
     )
     {
         return ResponseEntity.ok(adminService.findAllAccounts(pageable));

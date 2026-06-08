@@ -56,7 +56,7 @@ public class Account {
     private Customer customer;
 
     @Version
-    private Integer version;
+    private Integer version = 0;
 
     @Override
     public boolean equals(Object o)

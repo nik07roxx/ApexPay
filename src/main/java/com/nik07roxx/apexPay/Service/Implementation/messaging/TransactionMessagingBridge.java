@@ -4,6 +4,7 @@ import com.nik07roxx.apexPay.DTO.Transactions.TransactionCompleteEvent;
 import com.nik07roxx.apexPay.DTO.Transactions.TransactionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;

@@ -40,8 +40,8 @@ public class Customer {
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
     private List<Account> accounts;
 
-    @Version // <-- The Magic Annotation
-    private Integer version;
+    @Version
+    private Integer version = 0;
 
     @Override
     public boolean equals(Object o)

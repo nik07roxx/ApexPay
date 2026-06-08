@@ -10,10 +10,12 @@ import com.nik07roxx.apexPay.Service.TransactionsService;
 import com.nik07roxx.apexPay.exceptions.AccountNotFoundException;
 import com.nik07roxx.apexPay.exceptions.InsufficientFundsException;
 import com.nik07roxx.apexPay.exceptions.InvalidRequestException;
+import com.nik07roxx.apexPay.model.AccountStatus;
 import com.nik07roxx.apexPay.model.CurrencyType;
 import com.nik07roxx.apexPay.model.TransactionType;
 import com.nik07roxx.apexPay.util.ReferenceNumberGenerator;
-import jakarta.transaction.Transactional;
+import io.micrometer.core.annotation.Timed;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -42,6 +44,7 @@ public class TransactionsServiceImpl implements TransactionsService {
 
     @Override
     @Transactional
+    @Timed(value = "apexpay.core.deposit", description = "Time taken to complete a deposit transaction")
     public TransactionResponse depositToAccount(DepositRequest depositRequest) {
         log.info("Depositing {} into account number: {}.",depositRequest.amount(), depositRequest.targetAccount());
         String accountNumber = depositRequest.targetAccount();
@@ -59,6 +62,12 @@ public class TransactionsServiceImpl implements TransactionsService {
                     log.error("No account found with account number: {}", accountNumber);
                     return new AccountNotFoundException("Account not found: " + accountNumber);
                 });
+
+        if (!AccountStatus.ACTIVE.equals(foundAccount.getStatus())) {
+            log.error("Cannot perform transaction on a closed account: {}", accountNumber);
+            throw new InvalidRequestException("Cannot perform transaction on a closed account: "+accountNumber);
+        }
+
         BigDecimal currentBalance = foundAccount.getBalance();
         foundAccount.setBalance(currentBalance.add(depositRequest.amount()));
         log.info("Saving account with account number {} for deposit.", accountNumber);
@@ -108,6 +117,7 @@ public class TransactionsServiceImpl implements TransactionsService {
 
     @Override
     @Transactional
+    @Timed(value = "apexpay.core.withdraw", description = "Time taken to complete a withdraw transaction")
     public TransactionResponse withdrawFromAccount(WithdrawRequest withdrawRequest) {
         log.info("Withdrawing {} from account number: {}.",withdrawRequest.amount(), withdrawRequest.sourceAccount());
         String accountNumber = withdrawRequest.sourceAccount();
@@ -125,6 +135,12 @@ public class TransactionsServiceImpl implements TransactionsService {
                     log.error("No account found with account number: {}", accountNumber);
                     return new AccountNotFoundException("Account not found: " + accountNumber);
                 });
+
+        if (!AccountStatus.ACTIVE.equals(foundAccount.getStatus())) {
+            log.error("Cannot perform transaction on a closed account: {}", accountNumber);
+            throw new InvalidRequestException("Cannot perform transaction on a closed account: "+accountNumber);
+        }
+
         BigDecimal currentBalance = foundAccount.getBalance();
 
         // check if current balance of account is greater than amount
@@ -182,6 +198,7 @@ public class TransactionsServiceImpl implements TransactionsService {
 
     @Override
     @Transactional
+    @Timed(value = "apexpay.core.transfer", description = "Time taken to complete a transfer transaction")
     public TransactionResponse transfer(TransferRequest transferRequest) {
         log.info("Transferring {} from account number: {} to account number: {}."
                 ,transferRequest.amount()
@@ -213,6 +230,12 @@ public class TransactionsServiceImpl implements TransactionsService {
                     log.error("No account found with account number: {}", sourceAccountNumber);
                     return new AccountNotFoundException("Account not found: " + sourceAccountNumber);
                 });
+
+        if (!AccountStatus.ACTIVE.equals(foundWithdrawAccount.getStatus())) {
+            log.error("Cannot perform transaction on a closed account: {}", sourceAccountNumber);
+            throw new InvalidRequestException("Cannot perform transaction on a closed account: "+sourceAccountNumber);
+        }
+
         BigDecimal currentSourceBalance = foundWithdrawAccount.getBalance();
 
         // check if current balance of account is greater than amount
@@ -230,6 +253,12 @@ public class TransactionsServiceImpl implements TransactionsService {
                     log.error("No account found with account number: {}", targetAccountNumber);
                     return new AccountNotFoundException("Account not found: " + targetAccountNumber);
                 });
+
+        if (!AccountStatus.ACTIVE.equals(foundTargetAccount.getStatus())) {
+            log.error("Cannot perform transaction on a closed account: {}", targetAccountNumber);
+            throw new InvalidRequestException("Cannot perform transaction on a closed account: "+targetAccountNumber);
+        }
+
         BigDecimal currentTargetBalance = foundTargetAccount.getBalance();
 
         // check if both account currencies are the same or not
