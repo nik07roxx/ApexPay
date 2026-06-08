@@ -10,9 +10,11 @@ import com.nik07roxx.apexPay.Service.TransactionsService;
 import com.nik07roxx.apexPay.exceptions.AccountNotFoundException;
 import com.nik07roxx.apexPay.exceptions.InsufficientFundsException;
 import com.nik07roxx.apexPay.exceptions.InvalidRequestException;
+import com.nik07roxx.apexPay.factory.PaymentStrategyFactory;
 import com.nik07roxx.apexPay.model.AccountStatus;
 import com.nik07roxx.apexPay.model.CurrencyType;
 import com.nik07roxx.apexPay.model.TransactionType;
+import com.nik07roxx.apexPay.strategy.PaymentStrategy;
 import com.nik07roxx.apexPay.util.ReferenceNumberGenerator;
 import io.micrometer.core.annotation.Timed;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,10 +28,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Currency;
-import java.util.List;
 
 @Service
 @Slf4j
@@ -41,6 +39,7 @@ public class TransactionsServiceImpl implements TransactionsService {
     private final TransactionsRepository transactionsRepository;
     private final AccountRepository accountRepository;
     private final CurrencyConvertorService currencyConvertorService;
+    private final PaymentStrategyFactory strategyFactory;
 
     @Override
     @Transactional
@@ -200,7 +199,7 @@ public class TransactionsServiceImpl implements TransactionsService {
     @Transactional
     @Timed(value = "apexpay.core.transfer", description = "Time taken to complete a transfer transaction")
     public TransactionResponse transfer(TransferRequest transferRequest) {
-        log.info("Transferring {} from account number: {} to account number: {}."
+        log.info("Transferring {} {} from account number: {} to account number: {}."
                 ,transferRequest.amount()
                 ,transferRequest.sourceAccount()
                 ,transferRequest.targetAccount());
@@ -262,31 +261,20 @@ public class TransactionsServiceImpl implements TransactionsService {
         BigDecimal currentTargetBalance = foundTargetAccount.getBalance();
 
         // check if both account currencies are the same or not
-        BigDecimal rateOfConversion = null;
         CurrencyType sourceAccCurrency = foundWithdrawAccount.getAccountCurrency();
         CurrencyType targetAccCurrency = foundTargetAccount.getAccountCurrency();
-        if(sourceAccCurrency.equals(targetAccCurrency))
-        {
-            // if transfer is in the same currency
-            rateOfConversion = new BigDecimal("1.0");
-        }
-        else
-        {
-            // if source and transfer account have different currencies
-            CurrencyConvertorResponse convertedCurrencyAmount =
-                    currencyConvertorService.getConvertedCurrencyAmount(sourceAccCurrency);
 
-            rateOfConversion = convertedCurrencyAmount.getRate(targetAccCurrency.toString());
-        }
+        String routingType = sourceAccCurrency.toString().equalsIgnoreCase(targetAccCurrency.toString())
+                ? "SAME_CURRENCY"
+                : "CROSS_CURRENCY";
 
-        BigDecimal debitAmount = transferRequest.amount();
-        foundWithdrawAccount.setBalance(currentSourceBalance.subtract(debitAmount));
+        PaymentStrategy strategy = strategyFactory.getStrategy(routingType);
+        StrategyConversionResult result = strategy.processRouting(transferRequest,
+                foundWithdrawAccount,
+                foundTargetAccount);
 
-        // convert the credit amount to same conversion rate as debit amount
-        // 1.0 for same currency txn, derived for different currency txn
-        BigDecimal creditAmount = transferRequest.amount();
-        creditAmount = creditAmount.multiply(rateOfConversion);
-        foundTargetAccount.setBalance(currentTargetBalance.add(creditAmount));
+        foundWithdrawAccount.setBalance(currentSourceBalance.subtract(result.debitAmount()));
+        foundTargetAccount.setBalance(currentTargetBalance.add(result.creditAmount()));
 
         log.info("Saving account with account number {} for transfer.", sourceAccountNumber);
         accountRepository.save(foundWithdrawAccount);
@@ -299,11 +287,11 @@ public class TransactionsServiceImpl implements TransactionsService {
         newTransaction.setTransactionType(TransactionType.TRANSFER);
         newTransaction.setSourceAccount(sourceAccountNumber);
         newTransaction.setTargetAccount(targetAccountNumber);
-        newTransaction.setSourceAmount(debitAmount);
-        newTransaction.setTargetAmount(creditAmount);
+        newTransaction.setSourceAmount(result.debitAmount());
+        newTransaction.setTargetAmount(result.creditAmount());
         newTransaction.setSourceCurrency(sourceAccCurrency);
         newTransaction.setTargetCurrency(targetAccCurrency);
-        newTransaction.setExchangeRate(rateOfConversion);
+        newTransaction.setExchangeRate(result.rateOfConversion());
         newTransaction.setDescription(transferRequest.description());
         newTransaction.setTransactionReference(referenceNumberGenerator.generateUniqueTransactionReference());
 

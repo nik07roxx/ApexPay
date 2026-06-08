@@ -2,6 +2,7 @@ package com.nik07roxx.apexPay.Controller;
 
 import com.nik07roxx.apexPay.DTO.Customer.CustomerCreationRequest;
 import com.nik07roxx.apexPay.DTO.Customer.CustomerResponse;
+import com.nik07roxx.apexPay.DTO.Customer.CustomerUpdationRequest;
 import com.nik07roxx.apexPay.Service.CustomerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -62,9 +63,9 @@ public class CustomerController {
     @PatchMapping("/{id}")
     @Operation(summary = "Update a customer's details")
     public ResponseEntity<CustomerResponse> updateCustomer(@PathVariable Long id,
-                                               @Valid @RequestBody CustomerCreationRequest customerCreationRequest)
+                                                           @Valid @RequestBody CustomerUpdationRequest customerUpdationRequest)
     {
-        CustomerResponse updatedCustomer = customerService.updateCustomer(id,customerCreationRequest);
+        CustomerResponse updatedCustomer = customerService.updateCustomer(id,customerUpdationRequest);
         return ResponseEntity.ok(updatedCustomer);
     }
 

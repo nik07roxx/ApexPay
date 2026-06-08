@@ -12,5 +12,5 @@ import java.util.List;
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer,Long> {
     Page<Customer> findByStatus(CustomerStatus customerStatus, Pageable pageable);
-    boolean existsByEmail(String email);
+    boolean existsByEmailAndStatus(String email, CustomerStatus status);
 }

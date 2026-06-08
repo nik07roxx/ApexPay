@@ -29,6 +29,9 @@ public interface AccountRepository extends JpaRepository<Account,Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Account> findByAccountNumber(@Param("accountNumber") String accountNumber);
 
+    @Query("SELECT a from Account a where a.accountNumber = :accountNumber")
+    Optional<Account> findByAccountNumberForRead(@Param("accountNumber") String accountNumber);
+
     @Modifying
     @Transactional
     @Query("UPDATE Account a SET a.balance = a.balance + (a.balance * (a.interestRate / 12.0 / 100.0)) " +

@@ -7,9 +7,6 @@ import jakarta.validation.constraints.Pattern;
 
 import java.math.BigDecimal;
 
-public record AccountUpdationRequest(@NotNull(message = "Account type is required")
-                                     AccountType accountType,
-                                     @NotNull(message = "Balance is required")
+public record AccountUpdationRequest(AccountType accountType,
                                      BigDecimal balance,
-                                     @NotNull(message = "Currency is required")
                                      CurrencyType accountCurrency) {}

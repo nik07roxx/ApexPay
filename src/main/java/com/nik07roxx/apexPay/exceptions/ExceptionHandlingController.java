@@ -2,6 +2,7 @@ package com.nik07roxx.apexPay.exceptions;
 
 import com.nik07roxx.apexPay.DTO.Error.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class ExceptionHandlingController {
 
@@ -49,11 +51,14 @@ public class ExceptionHandlingController {
     @ExceptionHandler({AccountNotFoundException.class,
             CustomerNotFoundException.class,
             InsufficientFundsException.class,
-            InvalidRequestException.class})
+            InvalidRequestException.class,
+            PaymentStrategyNotFound.class})
     public ResponseEntity<ErrorResponse> handleValidationExceptions(RuntimeException ex) {
 
                 HttpStatus status = HttpStatus.BAD_REQUEST;
-                if (ex instanceof AccountNotFoundException || ex instanceof CustomerNotFoundException) {
+                if (ex instanceof AccountNotFoundException ||
+                    ex instanceof CustomerNotFoundException ||
+                    ex instanceof PaymentStrategyNotFound) {
                     status = HttpStatus.NOT_FOUND;
                 }
 
@@ -68,6 +73,7 @@ public class ExceptionHandlingController {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex) {
+        log.error("Global exception caught: ", ex);
         ErrorResponse errorResponse = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),

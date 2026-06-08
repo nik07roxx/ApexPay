@@ -7,6 +7,7 @@ import com.nik07roxx.apexPay.DTO.Account.AccountCreationRequest;
 import com.nik07roxx.apexPay.DTO.Account.AccountResponse;
 import com.nik07roxx.apexPay.DTO.Customer.CustomerCreationRequest;
 import com.nik07roxx.apexPay.DTO.Customer.CustomerResponse;
+import com.nik07roxx.apexPay.DTO.Customer.CustomerUpdationRequest;
 import com.nik07roxx.apexPay.Entity.Account;
 import com.nik07roxx.apexPay.Entity.Customer;
 import com.nik07roxx.apexPay.Repository.AccountRepository;
@@ -49,7 +50,8 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerResponse createCustomer(CustomerCreationRequest customerCreationRequest)
     {
         // check if email already exists in DB
-        if(customerRepository.existsByEmail(customerCreationRequest.email()))
+        if(customerRepository.existsByEmailAndStatus(customerCreationRequest.email(),
+                CustomerStatus.ACTIVE))
         {
             log.error("Customer with this email: {} already exists.",customerCreationRequest.email());
             throw new ResponseStatusException(HttpStatus.CONFLICT,"Customer with this email already exists.");
@@ -127,7 +129,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional
     @CacheEvict(value = "customers", key = "#id")
-    public CustomerResponse updateCustomer(Long id, CustomerCreationRequest customerCreationRequest) {
+    public CustomerResponse updateCustomer(Long id, CustomerUpdationRequest customerUpdationRequest) {
         // validate if customer exists
         log.info("Finding customer with id: {} for updation.", id);
         Customer currentCustomer = customerRepository.findById(id)
@@ -136,16 +138,16 @@ public class CustomerServiceImpl implements CustomerService {
                     return new CustomerNotFoundException("Customer not found: " + id);
                 });
 
-        if(customerCreationRequest.firstName() != null)
-            currentCustomer.setFirstName(customerCreationRequest.firstName());
-        if(customerCreationRequest.lastName() != null)
-            currentCustomer.setLastName(customerCreationRequest.lastName());
-        if(customerCreationRequest.email() != null)
-            currentCustomer.setEmail(customerCreationRequest.email());
-        if(customerCreationRequest.phone() != null)
-            currentCustomer.setPhone(customerCreationRequest.phone());
-        if(customerCreationRequest.address() != null)
-            currentCustomer.setAddress(customerCreationRequest.address());
+        if(customerUpdationRequest.firstName() != null)
+            currentCustomer.setFirstName(customerUpdationRequest.firstName());
+        if(customerUpdationRequest.lastName() != null)
+            currentCustomer.setLastName(customerUpdationRequest.lastName());
+        if(customerUpdationRequest.email() != null)
+            currentCustomer.setEmail(customerUpdationRequest.email());
+        if(customerUpdationRequest.phone() != null)
+            currentCustomer.setPhone(customerUpdationRequest.phone());
+        if(customerUpdationRequest.address() != null)
+            currentCustomer.setAddress(customerUpdationRequest.address());
 
         log.info("Saving customer with id: {} with updated details.", id);
         Customer savedCustomer = customerRepository.save(currentCustomer);

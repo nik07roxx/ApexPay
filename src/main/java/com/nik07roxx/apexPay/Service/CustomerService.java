@@ -2,6 +2,7 @@ package com.nik07roxx.apexPay.Service;
 
 import com.nik07roxx.apexPay.DTO.Customer.CustomerCreationRequest;
 import com.nik07roxx.apexPay.DTO.Customer.CustomerResponse;
+import com.nik07roxx.apexPay.DTO.Customer.CustomerUpdationRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -11,6 +12,6 @@ public interface CustomerService {
     CustomerResponse createCustomer(CustomerCreationRequest customerCreationRequest);
     Page<CustomerResponse> findAllCustomers(Pageable pageable);
     CustomerResponse findCustomerById(Long id);
-    CustomerResponse updateCustomer(Long id, CustomerCreationRequest customerCreationRequest);
+    CustomerResponse updateCustomer(Long id, CustomerUpdationRequest customerUpdationRequest);
     void deleteCustomerById(Long id);
 }

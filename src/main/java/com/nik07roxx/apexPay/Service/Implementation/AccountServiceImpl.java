@@ -14,7 +14,7 @@ import com.nik07roxx.apexPay.exceptions.CustomerNotFoundException;
 import com.nik07roxx.apexPay.model.AccountStatus;
 import com.nik07roxx.apexPay.model.AccountType;
 import com.nik07roxx.apexPay.util.ReferenceNumberGenerator;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -117,7 +117,7 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public AccountResponse findAccountByAccountNumber(String accountNumber) {
         log.info("Finding account with account number {}.", accountNumber);
-        Account foundAccount = accountRepository.findByAccountNumber(accountNumber)
+        Account foundAccount = accountRepository.findByAccountNumberForRead(accountNumber)
                         .orElseThrow(() -> {
                             log.error("No account found with account number: {}", accountNumber);
                             return new AccountNotFoundException("Account not found: " + accountNumber);
