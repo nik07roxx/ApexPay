@@ -1,5 +1,7 @@
 package com.nik07roxx.apexPay.config;
 
+import io.lettuce.core.RedisClient;
+import io.lettuce.core.RedisURI;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -58,5 +60,20 @@ public class RedisConfig {
         return RedisCacheManager.builder(connectionFactory) // 👈 Injected parameter!
                 .cacheDefaults(config)
                 .build();
+    }
+
+    @Bean(destroyMethod = "shutdown")
+    public RedisClient redisClient() {
+        // 1. Build the explicit Redis URI mapping
+        RedisURI.Builder uriBuilder = RedisURI.builder()
+                .withHost(redisHost)
+                .withPort(redisPort);
+
+        if (redisPassword != null && !redisPassword.isBlank()) {
+            uriBuilder.withPassword(redisPassword.toCharArray());
+        }
+
+        // 2. Instantiate and return the standard native Lettuce client
+        return RedisClient.create(uriBuilder.build());
     }
 }

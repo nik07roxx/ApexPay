@@ -1,4 +1,4 @@
-package com.nik07roxx.apexPay.config;
+package com.nik07roxx.apexPay.gateway.idempotency;
 
 import com.nik07roxx.apexPay.DTO.Idempotency.IdempotencyRecord;
 import com.fasterxml.jackson.databind.ObjectMapper;
