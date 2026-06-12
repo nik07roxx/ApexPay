@@ -89,7 +89,6 @@ public class ExceptionHandlingController {
                                                                            HttpServletRequest request) {
         Map<String, Object> errorResponse = new HashMap<>();
 
-        // Add custom details
         errorResponse.put("timestamp", LocalDateTime.now());
         errorResponse.put("status", HttpStatus.FORBIDDEN.value());
         errorResponse.put("error", "Access Denied");
@@ -114,5 +113,18 @@ public class ExceptionHandlingController {
         errorResponse.put("path", request.getRequestURI());
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(ExternalServiceUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleExternalServiceError(ExternalServiceUnavailableException ex) {
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "Service Unavailable",
+                ex.getMessage(),
+                null
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 }
